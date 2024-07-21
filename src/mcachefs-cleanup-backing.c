@@ -186,15 +186,19 @@ mcachefs_backing_sort(struct mcachefs_backing_files *filelist)
 void
 mcachefs_cleanup_backing()      // struct mcachefs_file_t *mvops, int simulate)
 {
+
     int rootfd = -1, backingfd;
     int max_age;
     char *prefix, *relative_path;
     off_t total = 0;
     struct mcachefs_backing_files filelist = { NULL, NULL };
-    struct mcachefs_backing_file *file;
+    struct mcachefs_backing_file *file, *last;
+    int simulate = 1;
+
 
     max_age = mcachefs_config_get_cleanup_cache_age();
-    prefix = strdup(mcachefs_config_get_cleanup_cache_prefix());
+    //prefix = strdup(mcachefs_config_get_cleanup_cache_prefix());
+    prefix = strdup("/");
 
     Info("Building cache list : prefix='%s', age=%d\n", prefix, max_age);
 
@@ -226,7 +230,7 @@ mcachefs_cleanup_backing()      // struct mcachefs_file_t *mvops, int simulate)
 
     mcachefs_backing_update_metadata(&filelist);
 
-    mcachefs_backing_sort(&filelist);
+    //mcachefs_backing_sort(&filelist);
 
     for (file = filelist.head; file; file = file->next)
     {
@@ -235,10 +239,11 @@ mcachefs_cleanup_backing()      // struct mcachefs_file_t *mvops, int simulate)
             continue;
         }
         total += file->size;
-#if 0
+#if 1
         if (simulate)
         {
-            __VOPS_WRITE(mvops, "%lu\t%lu\t%s\n", (unsigned long) file->age, (unsigned long) file->size, file->path);
+	    //__VOPS_WRITE(mvops, "%lu\t%lu\t%s\n", (unsigned long) file->age, (unsigned long) file->size, file->path);
+            Info("%lu\t%lu\t%s\n", (unsigned long) file->age, (unsigned long) file->size, file->path);
         }
         else
         {
@@ -250,25 +255,29 @@ mcachefs_cleanup_backing()      // struct mcachefs_file_t *mvops, int simulate)
             {
                 Err("Could not unlink '%s' : err=%d:%s\n", file->path, errno, strerror(errno));
             }
-#if 0
+#if 1
         }
 #endif
     }
-#if 0
+#if 1
     if (simulate)
     {
-        __VOPS_WRITE(mvops, "Total : %lu Mb\n", ((unsigned long) total) >> 20);
+	//__VOPS_WRITE(mvops, "Total : %lu Mb\n", ((unsigned long) total) >> 20);
+        Info("Total : %lu Mb\n", ((unsigned long) total) >> 20);
     }
 #endif
     free(prefix);
-
+    last=NULL;
     for (file = filelist.head; file; file = file->next)
     {
+	if (last)
+	  free(last);
         free(file->path);
         filelist.head = file->next;
         if (filelist.head)
             filelist.head->previous = NULL;
-        free(file);
+        //free(file);
+	last = file;
     }
 
     close(rootfd);
