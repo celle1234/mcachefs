@@ -1193,13 +1193,16 @@ mcachefs_metadata_do_remove_hash(struct mcachefs_metadata_t *mdata)
                     brother->color = RED;
                 }
             }
-            if (iamleft)
+            if(up)
             {
-                up->left = 0;
-            }
-            else
-            {
-                up->right = 0;
+                if (iamleft)
+                {
+                    up->left = 0;
+                }
+                else
+                {
+                    up->right = 0;
+                }
             }
             Log("Ok, no replacer done !\n");
             return;
