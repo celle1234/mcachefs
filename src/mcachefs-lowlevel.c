@@ -673,13 +673,16 @@ mcachefs_release(const char *path, struct fuse_file_info *info)
     return mcachefs_release_mfile(mfile, info);
 }
 
-#if 0
+
+#if 1
 static int
 mcachefs_statfs(const char *path, struct statvfs *fsinfo)
 {
-    (void) path;
-    (void) fsinfo;
-    return -ENOSYS;
+    //(void) path;
+    //(void) fsinfo;
+    //return -ENOSYS;
+    statfs(mcachefs_config_get_cache(), fsinfo);
+    return 0;
 }
 #endif
 
