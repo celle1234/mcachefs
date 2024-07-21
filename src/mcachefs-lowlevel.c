@@ -291,6 +291,11 @@ mcachefs_rename(const char *path, const char *to)
 
     Log("mcachefs_rename(from = %s, to = %s)\n", path, to);
 
+    struct stat stbuf;
+    if ( mcachefs_getattr(to, &stbuf) > -1 ){
+	mcachefs_unlink(to);
+    }
+
     if ((res = mcachefs_metadata_rename_entry(path, to)) != 0)
     {
         Log("rename '%s' => '%s' : err=%d:%s\n", path, to, res, strerror(-res));
