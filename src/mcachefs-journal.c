@@ -600,11 +600,15 @@ mcachefs_journal_apply()
     if (mcachefs_journal_action != mcachefs_journal_action_none)
     {
         Err("Jounal already being applied, please wait...\n");
+        mcachefs_journal_action = mcachefs_journal_action_none;
         mcachefs_journal_unlock();
         return;
     }
     if (mcachefs_journal_fsync.total_files)
     {
+        Err("Already have pending fsync files !\n");
+    	mcachefs_journal_unlock();
+	return;
         Bug("Already have pending fsync files !\n");
     }
     mcachefs_journal_fsync.total_files = mcachefs_journal_fsync.files_ok = mcachefs_journal_fsync.files_error = 0;
@@ -617,6 +621,7 @@ mcachefs_journal_apply()
     if (mcachefs_journal_apply_updates(mcachefs_config_get_journal()))
     {
         Err("Could not apply updates !\n");
+        mcachefs_journal_action = mcachefs_journal_action_none;
         mcachefs_journal_unlock();
         return;
     }
