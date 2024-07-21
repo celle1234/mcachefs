@@ -38,7 +38,8 @@ typedef unsigned long long int hash_t;
 #endif
 
 #ifdef __MCACHEFS_HASH_USE_32_6_16
-typedef unsigned int hash_t;
+//typedef unsigned int hash_t;
+typedef unsigned long long int hash_t;
 #define __MCACHEFS_HASH_ALGORITHM "32.6.16"
 #endif
 
