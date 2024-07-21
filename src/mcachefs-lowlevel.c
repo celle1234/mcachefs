@@ -726,8 +726,10 @@ struct fuse_operations mcachefs_oper = {.getattr = mcachefs_getattr,.readlink = 
     .getdir = NULL,.mknod = mcachefs_mknod,.mkdir = mcachefs_mkdir,
     .unlink = mcachefs_unlink,.rmdir = mcachefs_rmdir,.symlink =
         mcachefs_symlink,.rename = mcachefs_rename,.link =
-        mcachefs_link,.chmod = mcachefs_chmod,.chown = mcachefs_chown,.truncate = mcachefs_truncate,.utime = mcachefs_utime,.open = mcachefs_open,
-    .read = mcachefs_read,.write = mcachefs_write,.statfs = NULL,
+        NULL,.chmod = mcachefs_chmod,.chown = mcachefs_chown,.truncate = mcachefs_truncate,.utime = mcachefs_utime,.open = mcachefs_open,
+        //mcachefs_link,.chmod = mcachefs_chmod,.chown = mcachefs_chown,.truncate = mcachefs_truncate,.utime = mcachefs_utime,.open = mcachefs_open,
+    //.read = mcachefs_read,.write = mcachefs_write,.statfs = NULL,
+    .read = mcachefs_read,.write = mcachefs_write,.statfs = mcachefs_statfs,
     .flush = mcachefs_flush,.release = mcachefs_release,.fsync = mcachefs_fsync,.setxattr = NULL,.getxattr = NULL,
     .listxattr = NULL,.opendir = NULL,.readdir = mcachefs_readdir,
     .fsyncdir = NULL,.init = mcachefs_init,
