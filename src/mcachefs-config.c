@@ -186,6 +186,7 @@ set_default_config(struct mcachefs_config *config)
         config->journal = (char *) malloc(PATH_MAX);
         snprintf(config->journal, PATH_MAX, "%s/%s/%s", DEFAULT_PREFIX, normalized_mp, "journal");
     }
+    free(normalized_mp);
 }
 
 void
