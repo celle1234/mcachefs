@@ -1134,7 +1134,12 @@ mcachefs_metadata_hash_swap(struct mcachefs_metadata_t *first, struct mcachefs_m
     }
 
     Log("Swapping %llu and %llu\n", first->id, second->id);
-
+    
+    if (first->up == 0){
+	mcachefs_metadata_head->hash_root = second->id;
+    }else if (second->up == 0){
+	mcachefs_metadata_head->hash_root = first->id;
+    }
     first->up = second->up;
     first->left = second->left;
     first->right = second->right;
