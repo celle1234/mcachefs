@@ -483,6 +483,8 @@ mcachefs_transfer_do_writeback(struct mcachefs_file_t *mfile, struct utimbuf *ti
             return;
 #else
             Info("File '%s' : real file seems fresher, and both have same size, but sync anyway !\n", mfile->path);
+	    Info("Will write back : real mtime=%lu, real size=%lu, metatstat mtime=%lu, metastat size=%lu\n",
+                realstat.st_mtime, (unsigned long) realstat.st_size, timbuf->modtime, (unsigned long) mfile->transfer.total_size);
 #endif
         }
         Log("Will write back : real mtime=%lu, real size=%lu, metatstat mtime=%lu, metastat size=%lu\n",
@@ -561,6 +563,8 @@ mcachefs_transfer_file(struct mcachefs_file_t *mfile, int tobacking)
        */
         Err("Diverging sizes for %s : source size=%lu, asked size=%lu\n", mfile->path, (unsigned long) source_stat.st_size, (unsigned long) size);
         size = size < source_stat.st_size ? size : source_stat.st_size;
+	if ( size == 0 && source_stat.st_size > 0 && tobacking == 0)
+	       size = source_stat.st_size;
         Err("Corrected size to %lu\n", (unsigned long) size);
     }
 #ifdef __MCACHEFS_TRANSFER_DO_FTRUNCATE_TARGET
