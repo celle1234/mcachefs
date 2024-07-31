@@ -447,7 +447,10 @@ mcachefs_journal_apply_entry(struct mcachefs_journal_entry_t *entry, const char 
         }
         break;
     case mcachefs_journal_op_link:
-        Err("Not handled : op=%x\n", entry->op);
+        if (link(realpath, realto)){
+            Err("Not handled : op=%x\n", entry->op);
+            Err("Could not link %s -> %s : err=%d:%s\n", realpath, realto, errno, strerror(errno));
+	}
         break;
     case mcachefs_journal_op_chmod:
         if (chmod(realpath, entry->mode))

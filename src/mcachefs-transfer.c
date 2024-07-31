@@ -474,7 +474,7 @@ mcachefs_transfer_do_writeback(struct mcachefs_file_t *mfile, struct utimbuf *ti
     }
     if (stat(realpath, &realstat) == 0)
     {
-        if (realstat.st_mtime >= timbuf->modtime && realstat.st_size == mfile->transfer.total_size)
+        if (realstat.st_mtime > timbuf->modtime && realstat.st_size == mfile->transfer.total_size)
         {
 #ifdef __MCACHEFS_TRANSFER_SKIP_FRESHER_SAME_SIZE
             Info("Will not write back file '%s' : real file seems fresher, and both have same size !\n", mfile->path);

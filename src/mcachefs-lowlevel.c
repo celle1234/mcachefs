@@ -15,6 +15,10 @@
 #include "mcachefs-transfer.h"
 #include "mcachefs-vops.h"
 
+static int                                              mcachefs_open(const char *path, struct fuse_file_info *info);
+static int                                              mcachefs_release(const char *path, struct fuse_file_info *info);
+static int                                              mcachefs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *info);
+
 #if 0
 struct stat mcachefs_target_stat;
 
@@ -325,18 +329,23 @@ mcachefs_rename(const char *path, const char *to)
 static int
 mcachefs_link(const char *from, const char *to)
 {
+    //Info("link %s, %s\n", from, to);
     int res;
     char *backingfrom, *backingto;
 
     struct mcachefs_metadata_t *meta = mcachefs_metadata_find(from);
     if (meta == NULL)
     {
+	Info("link not found %s, %s", from, to);
         return -ENOENT;
     }
     struct stat fromst = meta->st;
     mcachefs_metadata_id fromid = meta->id;
     mcachefs_metadata_id next_hardlink = meta->hardlink;
+    //int inode = meta->st.st_ino;
     mcachefs_metadata_release(meta);
+
+    //Info("%s, %s", mcachefs_makepath_cache(from), mcachefs_makepath_cache(to));
 
     backingfrom = mcachefs_makepath_cache(from);
     if (backingfrom == NULL)
@@ -352,6 +361,24 @@ mcachefs_link(const char *from, const char *to)
     }
 
     res = link(backingfrom, backingto);
+    if (res == -1){
+
+	static struct fuse_file_info *info;
+	info = malloc(sizeof(struct fuse_file_info));
+	mcachefs_open(from, info);
+	char *buf;
+	buf = malloc(4096 * sizeof(char));
+	int offset=0;
+	int c=0;
+        do {	
+	  c = mcachefs_read(from, buf, 4096, offset,info);
+          offset += 4096;
+	} while (c == 4096);
+	free(buf);
+	mcachefs_release(from, info);
+
+    	res = link(backingfrom, backingto);
+    }
 
     free(backingfrom);
     free(backingto);
@@ -369,10 +396,18 @@ mcachefs_link(const char *from, const char *to)
     {
         Bug("Could not get meta for to=%s\n", to);
     }
+    
+    //struct mcachefs_metadata_t *next = NULL;
+    
+    int links = meta->st.st_nlink + 1;
     toid = meta->id;
     meta->st = fromst;
     meta->hardlink = next_hardlink ? next_hardlink : fromid;
-    meta->st.st_nlink++;
+    meta->st.st_nlink = links;
+    //meta->st.st_ino = inode;
+    
+    Info("%llu\n", meta->id);
+    
     mcachefs_metadata_release(meta);
 
     meta = mcachefs_metadata_find(from);
@@ -380,9 +415,33 @@ mcachefs_link(const char *from, const char *to)
     {
         Bug("Could not get meta for from=%s\n", from);
     }
-    meta->st.st_nlink++;
+    links = meta->st.st_nlink + 1;
+    meta->st.st_nlink = links;
     meta->hardlink = toid;
+    
+    //Info("%llu\n", meta->id);
+
+    //mcachefs_metadata_id nextid = meta->hardlink;
+
     mcachefs_metadata_release(meta);
+    
+    mcachefs_metadata_lock();
+    
+    meta = mcachefs_metadata_get(meta->hardlink);
+    //Info("%llu\n", meta->id);
+
+    while ( meta->id != fromid ){
+	//Info("%llu %llu\n", meta->id, fromid);
+        meta->st.st_nlink = links;
+	//nextid = meta->hardlink;
+	//Info("%llu\n", nextid);
+        //mcachefs_metadata_release(meta);
+    	//mcachefs_metadata_lock();
+        meta = mcachefs_metadata_get(meta->hardlink);
+    }
+    mcachefs_metadata_unlock();
+    //mcachefs_metadata_release(meta);
+    
     mcachefs_journal_append(mcachefs_journal_op_link, from, to, 0, 0, 0, 0, 0, NULL);
     return 0;
 }
@@ -678,10 +737,10 @@ mcachefs_release(const char *path, struct fuse_file_info *info)
 static int
 mcachefs_statfs(const char *path, struct statvfs *fsinfo)
 {
-    //(void) path;
-    //(void) fsinfo;
+    (void) path;
+    (void) fsinfo;
     //return -ENOSYS;
-    statfs(mcachefs_config_get_cache(), fsinfo);
+    statvfs(mcachefs_config_get_cache(), fsinfo);
     return 0;
 }
 #endif
@@ -725,11 +784,13 @@ mcachefs_destroy(void *conn)
 struct fuse_operations mcachefs_oper = {.getattr = mcachefs_getattr,.readlink = mcachefs_readlink,
     .getdir = NULL,.mknod = mcachefs_mknod,.mkdir = mcachefs_mkdir,
     .unlink = mcachefs_unlink,.rmdir = mcachefs_rmdir,.symlink =
-        mcachefs_symlink,.rename = mcachefs_rename,.link =
-        NULL,.chmod = mcachefs_chmod,.chown = mcachefs_chown,.truncate = mcachefs_truncate,.utime = mcachefs_utime,.open = mcachefs_open,
-        //mcachefs_link,.chmod = mcachefs_chmod,.chown = mcachefs_chown,.truncate = mcachefs_truncate,.utime = mcachefs_utime,.open = mcachefs_open,
-    //.read = mcachefs_read,.write = mcachefs_write,.statfs = NULL,
-    .read = mcachefs_read,.write = mcachefs_write,.statfs = mcachefs_statfs,
+        mcachefs_symlink,.rename = mcachefs_rename,
+    	//.link = NULL,
+    	.link = mcachefs_link,
+	.chmod = mcachefs_chmod,.chown = mcachefs_chown,.truncate = mcachefs_truncate,.utime = mcachefs_utime,.open = mcachefs_open,
+    .read = mcachefs_read,.write = mcachefs_write,
+    //.statfs = NULL,
+    .statfs = mcachefs_statfs,
     .flush = mcachefs_flush,.release = mcachefs_release,.fsync = mcachefs_fsync,.setxattr = NULL,.getxattr = NULL,
     .listxattr = NULL,.opendir = NULL,.readdir = mcachefs_readdir,
     .fsyncdir = NULL,.init = mcachefs_init,
